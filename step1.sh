@@ -8,6 +8,9 @@ MAXFILE=0
 COUNT=0
 EMPTY="                                      \"leave as is\""
 
+mkdir -p $LOCATION
+mkdir -p ./Build
+
 declare -a FBANK
 FBANK[$COUNT]=$BANK
 
