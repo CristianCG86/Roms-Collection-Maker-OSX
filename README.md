@@ -14,6 +14,7 @@ You will have to give execution rights to the scripts and to zasm.
 
 chmod +x step1.sh
 chmod +x step2.sh
+chmod +x do_all.sh
 chmod +x zasm
 
 ## Copy files
@@ -29,6 +30,10 @@ In the second column specify the generation of MSX from which the ROM is compati
 ## Create the final ROM
 
 Run "step2.sh" to create the final ROM **"./Build/LoadThis.rom"**. to load it on the SCC Cartridge Flash-ROM, use [FL.COM](https://github.com/gdx-msx/FL/tree/master/FL-V133) from version 1.33.
+
+## Create all
+
+Run "do_all.sh" if you prefer create all at once
 
 ## Note
 

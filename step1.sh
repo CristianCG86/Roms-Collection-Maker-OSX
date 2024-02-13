@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Color variables
+red='\033[0;31m'
+clear='\033[0m'
+
+# Variables
 LOCATION="./Roms/"
 LOCATIONROM="$LOCATION*.rom"
 TARGET="./Build/EditThisList"
@@ -13,6 +18,12 @@ mkdir -p ./Build
 
 declare -a FBANK
 FBANK[$COUNT]=$BANK
+
+C_FILES_FOUND="$(find "$LOCATION" -maxdepth 1 -name "*.rom" | wc -l)"
+if [ ${C_FILES_FOUND} -eq 0 ]; then
+    echo "${red}Error: No ROMs found!${clear}"
+    exit 20
+fi
 
 for i in $LOCATIONROM; do
     NAME="$(basename "$i")$EMPTY"
@@ -28,17 +39,13 @@ for i in $LOCATIONROM; do
 done
 
 if [ $BANK -gt 255 ]; then
-    echo "ROMs exceeds 2032KB. Can not continue!"
-    echo
-    read -p "Press enter to continue"
-    exit
+    echo "${red}Error: ROMs exceeds 2032KB. Can not continue!${clear}"
+    exit 30
 fi
 
 if [ $MAXFILE -eq 0 ]; then
-    echo "File not found!"
-    echo
-    read -p "Press enter to continue"
-    exit
+    echo "${red}Error: File not found!${clear}"
+    exit 40
 fi
 
 if [ -e "$TARGET.asm" ]; then
