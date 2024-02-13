@@ -1,6 +1,6 @@
 	org	051Ch
 
-	include	".\Build\EditThisList.asm"
+	include	"./Build/EditThisList.asm"
 
 	ds	0222h,0
 
