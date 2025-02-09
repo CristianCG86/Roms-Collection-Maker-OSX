@@ -52,8 +52,6 @@ if [ -e "$TARGET.asm" ]; then
     rm "$TARGET.asm"
 fi
 
-cp Data3 "$TARGET.asm"
-
 MAXFILE=$((MAXFILE-1))
 MAXLIST=0
 
@@ -61,7 +59,9 @@ for n in $(seq 0 $MAXFILE); do
     if [ $MAXFILE -eq $n ]; then
         MAXLIST=128
     fi
-    echo "\tdb\t${FBANK[$n]}, $MAXLIST, \"  ${FNAME[$n]:0:38}\"" >> "$TARGET.asm"
+    # REMOVE EXTENSION FROM FILENAME
+    GAMENAME="${FNAME[$n]%.*}                                                   "
+    echo "\tdb\t${FBANK[$n]}, $MAXLIST, \"  ${GAMENAME:0:38}\"" >> "$TARGET.asm"
 done
 
 EBANK=$((FBANK[$MAXFILE]+STEP))

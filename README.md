@@ -29,11 +29,11 @@ In the second column specify the generation of MSX from which the ROM is compati
 
 ## Create the final ROM
 
-Run "step2.sh" to create the final ROM **"./Build/LoadThis.rom"**. to load it on the SCC Cartridge Flash-ROM, use [FL.COM](https://github.com/gdx-msx/FL/tree/master/FL-V133) from version 1.33.
+Run  **"./step2.sh"** to create the final ROM **"./Build/LoadThis.rom"**. to load it on the SCC Cartridge Flash-ROM, use [FL.COM](https://github.com/gdx-msx/FL/tree/master/FL-V133) from version 1.33.
 
 ## Create all
 
-Run "do_all.sh" if you prefer create all at once
+Run  **"./do_all.sh"** if you prefer create all at once.
 
 ## Note
 
