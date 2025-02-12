@@ -4,11 +4,15 @@
 ; Thanks to GDX for their contribution
 
 ; --- Constantes ---
-TITLE_TEXT_COLOR  EQU  15     ; Color del título (Blanco brillante)
-TITLE_BG_COLOR    EQU  1      ; Color de fondo del título (Negro)
-MENU_TEXT_COLOR   EQU  7      ; Color del menú (Gris)
-MENU_BG_COLOR     EQU  1      ; Color de fondo del menú (Negro)
 CHAR_SELECTOR	  EQU  3Eh	  ; Caracter de selección (0xCF)
+SELECTOR_POS	  EQU  8	  ; Posición del selector
+TS	  			  EQU  17h	  ; Línea de separación superior
+TS_POS			  EQU  1	  ; Posición de la línea de separación superior
+BS				  EQU  17h	  ; Línea de separación inferior
+BS_POS			  EQU  22	  ; Posición de la línea de separación inferior
+FREQ_POS		  EQU  23	  ; Posición de la frecuencia
+LIST_VIEW_SIZE	  EQU  20	  ; Tamaño de la lista de ROMs
+START_LIST		  EQU  2	  ; Inicio de la lista de ROMs
 
 ; Main-ROM entries
 
@@ -186,8 +190,9 @@ NextMSXgen:
 	ld	bc,WidthName
 	call	LDIRVM					; Print the title
 
-	ld	hl,EmptyLine
+	ld	hl,SMXTeam
 	ld	a,(MSXVER)
+
 	or	a
 	jr	z,CurrFreq				; Jump if MSX1
 
@@ -202,14 +207,34 @@ CurrFreq:
 	ld	hl,RomList
 	ld	(CurrTopName),hl
 
+PrintTopSeparator:
+	ld	hl,(TXTATR)
+	ld	de,WidthName*TS_POS
+	add	hl,de
+	ex	hl,de					; Set the position at the line 0
+
+	ld	hl,SeparatorTopLine
+	ld	bc,WidthName
+	call	LDIRVM					; Print the title
+
 MainLoop:
 	ld	hl,(TXTATR)
-	ld	de,WidthName*4				; Set the list position at the line 4
+	ld	de,WidthName*START_LIST				; Set the list position at the line 4
 	add	hl,de
 	ld	(VramPos),hl
 
 	halt
 	call	PrintList				; Print the Roms list
+
+	; -- Print separator bottom
+	ld	hl,(TXTATR)
+	ld	de,WidthName*BS_POS
+	add	hl,de
+	ex	hl,de					; Set the position at the line 0
+
+	ld	hl,SeparatorBottomLine
+	ld	bc,WidthName
+	call	LDIRVM		
 
 ; Keyboard tests
 
@@ -249,8 +274,7 @@ MainLoop:
 	ld	a,3
 	call	GTTRIG					; Test the button 2 of the joystick 1
 	or	a
-	call	nz,FreqTogglJ				; Jump if button 2 of the joystick 1 is pressed
-
+	call	nz,FreqTogglJ				; Jump if button 2 of the joystick 1 is pressed			; Print the title
 	jr	MainLoop
 
 FreqTogglJ:
@@ -288,7 +312,7 @@ FreqToggle:
 PrintFreqOpt:
 	push	hl
 	ld	hl,(TXTATR)
-	ld	de,WidthName*2
+	ld	de,WidthName*FREQ_POS
 	add	hl,de
 	ex	hl,de					; Set the position at the line 2
 	pop	hl
@@ -354,7 +378,7 @@ PrevName:
 	ret
 
 PrintList:
-	ld	b,20					; 20 lines to display
+	ld	b,LIST_VIEW_SIZE					; 20 lines to display
 	ld	hl,(CurrTopName)			; HL = Current Top name address
 
 PrintListLP:
@@ -377,7 +401,7 @@ PrintOK:
 	dec	hl					; Points the Segment number
 	pop	bc
 	push	bc
-	ld	a,20-6
+	ld	a,LIST_VIEW_SIZE-6
 	cp	b
 	jr	nz,SkipSegMum
 	ld	a,e
@@ -411,7 +435,7 @@ SkipSegMum:
 	djnz	PrintListLP
 
 	ld	hl,(TXTATR)
-	ld	de,WidthName*10 + 3
+	ld	de,WidthName*SELECTOR_POS + 3
 	add	hl,de
 	ld	a,CHAR_SELECTOR
 	call	WRTVRM					; Print the selection cursor to line 10
@@ -425,7 +449,7 @@ SkipSegMum:
 PrintName:
 	pop	hl
 	inc	hl
-	ld	bc,WidthName*4
+	ld	bc,WidthName*START_LIST
 	call	LDIRVM					; Print the current name
 	pop	hl
 	ret
@@ -739,20 +763,26 @@ RamPrgEnd:
 Title:
 	include	"./RCM Title.asm"
 Characters:
-	include	"./fonts/font2.asm"
+	include	"./fonts/custom.asm"
 EmptyLine:
 	db	"                                        "
+SeparatorTopLine:
+	db	TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS
+SeparatorBottomLine:
+	db	BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS
 F1_50Hz:
-	db	"  SMX Team              [F1] 50Hz mode  "
+	db	" ", 11h, 12h, 13h, " Team                 ",2Bh, 2Eh, 2Fh," 50Hz mode "
 F1_60Hz:
-	db	"  SMX Team              [F1] 60Hz mode  "
+	db	" ", 11h, 12h, 13h, " Team                 ",2Bh, 2Eh, 2Fh," 60Hz mode "
+SMXTeam:
+	db	"                ", 11h, 12h, 13h, " Team                "
 
 ; RomList format is: ROM segment, MSX generation, "Rom name"
 
 RomList:
 	ds	LineData*6,0
 	include	"./Build/EditThisList.asm"
-	ds	LineData*13,0
+	ds	LineData*20,0
 
 EndList:
 	ds	02000h-(EndList-04000h),255
