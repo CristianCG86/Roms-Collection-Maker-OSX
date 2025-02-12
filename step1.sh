@@ -5,7 +5,7 @@ red='\033[0;31m'
 clear='\033[0m'
 
 # Variables
-LOCATION="./Roms/"
+LOCATION="./Roms/KONAMICLASSIC/"
 LOCATIONROM="$LOCATION*.rom"
 TARGET="./Build/EditThisList"
 BANK=2
@@ -61,7 +61,7 @@ for n in $(seq 0 $MAXFILE); do
     fi
     # REMOVE EXTENSION FROM FILENAME
     GAMENAME="${FNAME[$n]%.*}                                                   "
-    echo "\tdb\t${FBANK[$n]}, $MAXLIST, \"  ${GAMENAME:0:38}\"" >> "$TARGET.asm"
+    echo "\tdb\t${FBANK[$n]}, $MAXLIST, \"     ${GAMENAME:0:35}\"" >> "$TARGET.asm"
 done
 
 EBANK=$((FBANK[$MAXFILE]+STEP))

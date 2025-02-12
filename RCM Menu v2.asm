@@ -3,6 +3,13 @@
 ;
 ; Thanks to GDX for their contribution
 
+; --- Constantes ---
+TITLE_TEXT_COLOR  EQU  15     ; Color del título (Blanco brillante)
+TITLE_BG_COLOR    EQU  1      ; Color de fondo del título (Negro)
+MENU_TEXT_COLOR   EQU  7      ; Color del menú (Gris)
+MENU_BG_COLOR     EQU  1      ; Color de fondo del menú (Negro)
+CHAR_SELECTOR	  EQU  3Eh	  ; Caracter de selección (0xCF)
+
 ; Main-ROM entries
 
 BASRVN		equ	0002Bh
@@ -22,6 +29,14 @@ VDP_DW		equ	00007h
 WRSLT		equ	00014h
 WRTVDP		equ	00047h 
 WRTVRM		equ	0004Dh
+
+; bios call to print a character on screen
+CHPUT      equ 0x00a2        ; BIOS routine that sends to the screen the contents pointed by the A register
+CHGMOD     equ 0x005f        ; BIOS routine that changes the screen mode to the value defined by A
+CHGET      equ 0x009F        ; BIOS routine that waits for a key to be pressed
+ERAFNK     equ 0x00CC        ; BIOS routine that sets the function keys as hidden
+DSPFNK     equ 0x00CF        ; BIOS routine that sets the function keys as shown
+FNKSB      equ 0x00C9        ; BIOS routine that changes the function keys between hidden and shown
 
 ; System variables
 
@@ -55,7 +70,7 @@ RomSize		equ	CurrAdr+2			; Rom size in number of the segment
 WidthName	equ	40
 LineData	equ	42
 
-Offset		equ	1				; 0 Without offset register
+Offset		equ	0				; 0 Without offset register
 							; 1 Offset register (Flash Rom SCC Cartridge popolon-fr)
 							; 2 Offset register (MFR SCC+ SD)
 	if	Offset==1
@@ -125,7 +140,19 @@ Start:
 	ld	(FORCLR),a				; Text color
 	ld	a,WidthName
 	ld	(LINL40),a				; Width 40
-	call	INITXT					; Screen 0
+	call	INITXT				; Screen 0
+
+	; Copiar la fuente a la dirección 0x0000 en la VRAM
+    LD HL, Characters        ; Dirección de la fuente
+    LD DE, 0x0800             ; Dirección en la VRAM
+    LD BC, 768                ; 96 caracteres * 8 bytes
+    CALL LDIRVM               ; Copiar a la VRAM
+
+    ; Cambiar la tabla de caracteres en el VDP
+    LD A, 2                 ; Registro 2 del VDP
+    OUT (0x99), A           ; Selecciona el registro 2
+    LD A, 0x08              ; Apuntar a la dirección 0x0800 (0x0800 / 0x800 = 0x08)
+    OUT (0x99), A           ; Actualiza el VDP para usar la tabla en 0x0800
 
 ;-- Tests if one Game only to execute it directly
 
@@ -149,10 +176,12 @@ NextMSXgen:
 	cp	255
 	jp	z,RomExec				; Jump if MSX generation value of the next line is 255
 ;--
+
 	ld	hl,(TXTATR)
 	ld	de,WidthName*0
 	add	hl,de
 	ex	hl,de					; Set the position at the line 0
+
 	ld	hl,Title
 	ld	bc,WidthName
 	call	LDIRVM					; Print the title
@@ -382,9 +411,9 @@ SkipSegMum:
 	djnz	PrintListLP
 
 	ld	hl,(TXTATR)
-	ld	de,WidthName*10
+	ld	de,WidthName*10 + 3
 	add	hl,de
-	ld	a,'>'
+	ld	a,CHAR_SELECTOR
 	call	WRTVRM					; Print the selection cursor to line 10
 
 	halt
@@ -400,6 +429,13 @@ PrintName:
 	call	LDIRVM					; Print the current name
 	pop	hl
 	ret
+
+SetVDPReg:
+    LD A, 2              ; Registro 2 del VDP
+    OUT (0x99), A        ; Selecciona el registro 2 del VDP
+    LD A, 0x08           ; Apunta a la tabla de caracteres en 0x0800
+    OUT (0x99), A        ; Escribe el valor en el registro
+    RET
 
 RomSel:
 	push	bc
@@ -702,12 +738,14 @@ RamPrgEnd:
 
 Title:
 	include	"./RCM Title.asm"
+Characters:
+	include	"./fonts/font2.asm"
 EmptyLine:
 	db	"                                        "
 F1_50Hz:
-	db	"  By CristianCG 2025    [F1] 50Hz mode  "
+	db	"  SMX Team              [F1] 50Hz mode  "
 F1_60Hz:
-	db	"  By CristianCG 2025    [F1] 60Hz mode  "
+	db	"  SMX Team              [F1] 60Hz mode  "
 
 ; RomList format is: ROM segment, MSX generation, "Rom name"
 
@@ -726,3 +764,6 @@ EndList:
 ; Fill the rest of segment 1 with 255
 
 	ds	01FF0h,255
+	
+
+
