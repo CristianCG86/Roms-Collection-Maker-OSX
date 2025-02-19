@@ -1,11 +1,24 @@
 #!/bin/sh
 
+foldergames=$1
+
+if [ -z "$foldergames" ]; then
+    echo "Usage: $0 <foldergames>"
+    exit 1
+fi
+
+# Check if folder exists in ./Roms folder
+if [ ! -d "./Roms/$foldergames" ]; then
+    echo "Folder $foldergames does not exist in ./Roms folder"
+    exit 1
+fi
+
 # Color variables
 red='\033[0;31m'
 clear='\033[0m'
 
 # Variables
-LOCATION="./Roms/KONAMICLASSIC/"
+LOCATION="./Roms/$foldergames/"
 LOCATIONROM="$LOCATION*.rom"
 TARGET="./Build/EditThisList"
 BANK=2

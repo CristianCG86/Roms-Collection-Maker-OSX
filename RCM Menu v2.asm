@@ -74,7 +74,7 @@ RomSize		equ	CurrAdr+2			; Rom size in number of the segment
 WidthName	equ	40
 LineData	equ	42
 
-Offset		equ	0				; 0 Without offset register
+Offset		equ	0			; 0 Without offset register
 							; 1 Offset register (Flash Rom SCC Cartridge popolon-fr)
 							; 2 Offset register (MFR SCC+ SD)
 	if	Offset==1

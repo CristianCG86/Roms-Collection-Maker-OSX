@@ -1,6 +1,6 @@
 ; --------------------------------------
 ; zasm: assemble "RCM Menu v2.asm"
-; date: 2025-02-13 00:08:57
+; date: 2025-02-19 21:15:34
 ; --------------------------------------
 
 
@@ -80,7 +80,7 @@ RomSize		equ	CurrAdr+2			; Rom size in number of the segment
 WidthName	equ	40
 LineData	equ	42
 
-Offset		equ	0				; 0 Without offset register
+Offset		equ	1			; 0 Without offset register
 							; 1 Offset register (Flash Rom SCC Cartridge popolon-fr)
 							; 2 Offset register (MFR SCC+ SD)
 	if	Offset==1
@@ -771,7 +771,7 @@ Title:
 ; Give your Rom compilation a title. It will be displayed at the top of the screen just above the list of Roms
 ; You must respect the number of characters between quotation marks which is 40
 
-	db	"    ",14h," KONAMI'S CLASSIC COLLECTION    "
+	db	"              SEGA PACK              "
      
 Characters:
 	include	"./fonts/custom.asm"
@@ -922,36 +922,26 @@ SMXTeam:
 RomList:
 	ds	LineData*6,0
 	include	"./Build/EditThisList.asm"
-	db	2, 0, "     ANTARCTIC ADVENTURE                "
-	db	4, 0, "     ATHLETIC BALL                      "
-	db	6, 0, "     ATHLETIC LAND                      "
-	db	8, 0, "     CABBAGE PATCH KIDS                 "
-	db	10, 0, "     CIRCUS CHARLIE                     "
-	db	12, 0, "     COMIC BAKERY                       "
-	db	14, 0, "     FROGGER                            "
-	db	15, 0, "     HYPER OLYMPIC 1                    "
-	db	17, 0, "     HYPER OLYMPIC 2                    "
-	db	19, 0, "     HYPER SPORTS 1                     "
-	db	21, 0, "     HYPER SPORTS 2                     "
-	db	23, 0, "     KING'S VALLEY                      "
-	db	25, 0, "     KONAMI'S BASEBALL                  "
-	db	27, 0, "     KONAMI'S BILLIARDS                 "
-	db	28, 0, "     KONAMI'S GOLF                      "
-	db	30, 0, "     KONAMI'S PING-PONG                 "
-	db	32, 0, "     KONAMI'S TENNIS                    "
-	db	34, 0, "     MAGICAL TREE                       "
-	db	36, 0, "     MONKEY ACADEMY                     "
-	db	38, 0, "     MOPIRANGER                         "
-	db	40, 0, "     PIPPOLS                            "
-	db	42, 0, "     POOYAN                             "
-	db	44, 0, "     ROAD FIGHTER                       "
-	db	46, 0, "     SKY JAGUAR                         "
-	db	48, 0, "     SUPER COBRA                        "
-	db	49, 0, "     TIME PILOT                         "
-	db	51, 0, "     TRACK & FIELD 1                    "
-	db	53, 0, "     TRACK & FIELD 2                    "
-	db	55, 128, "     YIE AR KUNG-FU                     "
-	db	57, 255, "                                        " ; Do not modify this line
+	db	2, 0, "     BANK PANIC                         "
+	db	6, 0, "     BOMB JACK                          "
+	db	10, 0, "     BUCK ROGERS - PLANET OF ZOOM       "
+	db	14, 0, "     CONGO BONGO                        "
+	db	18, 0, "     CHAMPION BILLIARD                  "
+	db	22, 0, "     CHAMPION BOXING                    "
+	db	26, 0, "     CHAMPION ICE HOCKEY                "
+	db	30, 0, "     CHAMPION PRO WRESTLING             "
+	db	34, 0, "     CHAMPION SOCCER                    "
+	db	36, 0, "     CHAMPIONSHIP KENDO                 "
+	db	40, 0, "     DOKI DOKI PENGUIN LAND             "
+	db	44, 0, "     GP WORLD                           "
+	db	48, 0, "     GULKAVE                            "
+	db	52, 0, "     HANG-ON                            "
+	db	56, 0, "     ORGUSS                             "
+	db	60, 0, "     STAR TREK STRATEGIC OPERATIONS SIMU"
+	db	64, 0, "     ZAXXON                             "
+	db	68, 128, "     ZOOM 909                           "
+	db	72, 129, "     ZZOUTRUN-2                         "
+	db	104, 255, "                                        " ; Do not modify this line
 	ds	LineData*20,0
 
 EndList:
@@ -975,39 +965,39 @@ EndList:
 
 ; +++ global symbols +++
 
-AD6000              = $43D7 = 17367          RCM Menu v2.asm:731 (unused)
-AD7000              = $43E6 = 17382          RCM Menu v2.asm:746 (unused)
+AD6000              = $43E2 = 17378          RCM Menu v2.asm:731 (unused)
+AD7000              = $43F1 = 17393          RCM Menu v2.asm:746 (unused)
 BAKCLR              = $F3EA = 62442          RCM Menu v2.asm:47
 BASRVN              = $002B =    43          RCM Menu v2.asm:19
 BDRCLR              = $F3EB = 62443          RCM Menu v2.asm:48
 BS                  = $0017 =    23          RCM Menu v2.asm:11
 BS_POS              = $0016 =    22          RCM Menu v2.asm:12
-BankSel             = $43A7 = 17319          RCM Menu v2.asm:673
-Bk5000              = $43A7 = 17319          RCM Menu v2.asm:675 (unused)
-Bk7000              = $43B3 = 17331          RCM Menu v2.asm:689 (unused)
-Bk9000              = $43BF = 17343          RCM Menu v2.asm:703 (unused)
-BkB000              = $43CB = 17355          RCM Menu v2.asm:717 (unused)
+BankSel             = $43B2 = 17330          RCM Menu v2.asm:673
+Bk5000              = $43B2 = 17330          RCM Menu v2.asm:675 (unused)
+Bk7000              = $43BE = 17342          RCM Menu v2.asm:689 (unused)
+Bk9000              = $43CA = 17354          RCM Menu v2.asm:703 (unused)
+BkB000              = $43D6 = 17366          RCM Menu v2.asm:717 (unused)
 CHAR_SELECTOR       = $003E =    62          RCM Menu v2.asm:7
 CHGET               = $009F =   159          RCM Menu v2.asm:40 (unused)
 CHGMOD              = $005F =    95          RCM Menu v2.asm:39 (unused)
 CHPUT               = $00A2 =   162          RCM Menu v2.asm:38 (unused)
 CONT                = $41B4 = 16820          RCM Menu v2.asm:350 (unused)
-Characters          = $441A = 17434          RCM Menu v2.asm:765
-CurrAdr             = $E166 = 57702          RCM Menu v2.asm:72
+Characters          = $4425 = 17445          RCM Menu v2.asm:765
+CurrAdr             = $E171 = 57713          RCM Menu v2.asm:72
 CurrFreq            = $40C6 = 16582          RCM Menu v2.asm:204
-CurrTopName         = $E15E = 57694          RCM Menu v2.asm:66
+CurrTopName         = $E169 = 57705          RCM Menu v2.asm:66
 DISSCR              = $0041 =    65          RCM Menu v2.asm:20 (unused)
 DSPFNK              = $00CF =   207          RCM Menu v2.asm:42 (unused)
 ENASCR              = $0044 =    68          RCM Menu v2.asm:21 (unused)
 ENASLT              = $0024 =    36          RCM Menu v2.asm:22
 ERAFNK              = $00CC =   204          RCM Menu v2.asm:41 (unused)
 EXPTBL              = $FCC1 = 64705          RCM Menu v2.asm:53
-EmptyLine           = $4C1A = 19482          RCM Menu v2.asm:767 (unused)
-EndList             = $563A = 22074          RCM Menu v2.asm:787
-ExeByJump           = $4397 = 17303          RCM Menu v2.asm:656
-ExeByRet            = $43A0 = 17312          RCM Menu v2.asm:662
-F1_50Hz             = $4C92 = 19602          RCM Menu v2.asm:773
-F1_60Hz             = $4CBA = 19642          RCM Menu v2.asm:775
+EmptyLine           = $4C25 = 19493          RCM Menu v2.asm:767 (unused)
+EndList             = $54A1 = 21665          RCM Menu v2.asm:787
+ExeByJump           = $43A2 = 17314          RCM Menu v2.asm:656
+ExeByRet            = $43AB = 17323          RCM Menu v2.asm:662
+F1_50Hz             = $4C9D = 19613          RCM Menu v2.asm:773
+F1_60Hz             = $4CC5 = 19653          RCM Menu v2.asm:775
 FILVRM              = $0056 =    86          RCM Menu v2.asm:23 (unused)
 FNKSB               = $00C9 =   201          RCM Menu v2.asm:43 (unused)
 FORCLR              = $F3E9 = 62441          RCM Menu v2.asm:49
@@ -1025,16 +1015,17 @@ LIST_VIEW_SIZE      = $0014 =    20          RCM Menu v2.asm:14
 LineData            = $002A =    42          RCM Menu v2.asm:75
 MSXVER              = $002D =    45          RCM Menu v2.asm:29
 MainLoop            = $40E0 = 16608          RCM Menu v2.asm:220
-MainPrgEnd          = $43A7 = 17319          RCM Menu v2.asm:668
+MainPrgEnd          = $43B2 = 17330          RCM Menu v2.asm:668
 MoveDown            = $41A1 = 16801          RCM Menu v2.asm:337
 MoveUp              = $41C7 = 16839          RCM Menu v2.asm:364
 NEWKEY              = $FBE5 = 64485          RCM Menu v2.asm:52
 NextMSXgen          = $408C = 16524          RCM Menu v2.asm:169
 NextName            = $41BC = 16828          RCM Menu v2.asm:357
-NextSegMum          = $E164 = 57700          RCM Menu v2.asm:70
+NextSegMum          = $E16F = 57711          RCM Menu v2.asm:70
 NoScreen1           = $4269 = 17001          RCM Menu v2.asm:475
-NoUPTO8000          = $42F3 = 17139          RCM Menu v2.asm:562
-Offset              = $0000 =     0          RCM Menu v2.asm:77
+NoUPTO8000          = $42FE = 17150          RCM Menu v2.asm:562
+Offset              = $0001 =     1          RCM Menu v2.asm:77
+OffsetReg           = $3FFF = 16383          RCM Menu v2.asm:81
 PlainRom8to16K      = $427B = 17019          RCM Menu v2.asm:484 (unused)
 PrevName            = $41D1 = 16849          RCM Menu v2.asm:372 (unused)
 PrgInRam            = $E010 = 57360          RCM Menu v2.asm:65
@@ -1045,39 +1036,39 @@ PrintName           = $4246 = 16966          RCM Menu v2.asm:449 (unused)
 PrintOK             = $41F5 = 16885          RCM Menu v2.asm:399
 PrintTopSeparator   = $40CF = 16591          RCM Menu v2.asm:210 (unused)
 PrnCond             = $41E5 = 16869          RCM Menu v2.asm:387
-PutOnpages1_2_3     = $435B = 17243          RCM Menu v2.asm:624
+PutOnpages1_2_3     = $4366 = 17254          RCM Menu v2.asm:624
 RG9SAV              = $FFE8 = 65512          RCM Menu v2.asm:54
 RSLREG              = $0138 =   312          RCM Menu v2.asm:30
 RamBottom           = $E000 = 57344          RCM Menu v2.asm:64
-RamPrgEnd           = $43F5 = 17397          RCM Menu v2.asm:761
-Rom2page0           = $431F = 17183          RCM Menu v2.asm:592
+RamPrgEnd           = $4400 = 17408          RCM Menu v2.asm:761
+Rom2page0           = $432A = 17194          RCM Menu v2.asm:592
 Rom2page1           = $4299 = 17049          RCM Menu v2.asm:501 (unused)
-Rom2page2           = $42F9 = 17145          RCM Menu v2.asm:570
+Rom2page2           = $4304 = 17156          RCM Menu v2.asm:570
 Rom2pages1_2        = $42BB = 17083          RCM Menu v2.asm:519
-Rom2pages1_2_3      = $4345 = 17221          RCM Menu v2.asm:614
+Rom2pages1_2_3      = $4350 = 17232          RCM Menu v2.asm:614
 RomExec             = $4189 = 16777          RCM Menu v2.asm:322
-RomList             = $4D0A = 19722          RCM Menu v2.asm:782
+RomList             = $4D15 = 19733          RCM Menu v2.asm:782
 RomSel              = $4259 = 16985          RCM Menu v2.asm:464
-RomSize             = $E168 = 57704          RCM Menu v2.asm:73
-RomSlot             = $E165 = 57701          RCM Menu v2.asm:71
+RomSize             = $E173 = 57715          RCM Menu v2.asm:73
+RomSlot             = $E170 = 57712          RCM Menu v2.asm:71
 SELECTOR_POS        = $0008 =     8          RCM Menu v2.asm:8
-SMXTeam             = $4CE2 = 19682          RCM Menu v2.asm:777
+SMXTeam             = $4CED = 19693          RCM Menu v2.asm:777
 START_LIST          = $0002 =     2          RCM Menu v2.asm:15
-SegMum              = $E163 = 57699          RCM Menu v2.asm:69
-SeparatorBottomLine = $4C6A = 19562          RCM Menu v2.asm:771
-SeparatorTopLine    = $4C42 = 19522          RCM Menu v2.asm:769
+SegMum              = $E16E = 57710          RCM Menu v2.asm:69
+SeparatorBottomLine = $4C75 = 19573          RCM Menu v2.asm:771
+SeparatorTopLine    = $4C4D = 19533          RCM Menu v2.asm:769
 SetVDPReg           = $4250 = 16976          RCM Menu v2.asm:457 (unused)
-SettingBits         = $E162 = 57698          RCM Menu v2.asm:68
+SettingBits         = $E16D = 57709          RCM Menu v2.asm:68
 SkipSegMum          = $4214 = 16916          RCM Menu v2.asm:417
 Start               = $4010 = 16400          RCM Menu v2.asm:96
 TS                  = $0017 =    23          RCM Menu v2.asm:9
 TS_POS              = $0001 =     1          RCM Menu v2.asm:10
 TXTATR              = $F3B9 = 62393          RCM Menu v2.asm:51
-Title               = $43F5 = 17397          RCM Menu v2.asm:763
+Title               = $4400 = 17408          RCM Menu v2.asm:763
 VDP_DR              = $0006 =     6          RCM Menu v2.asm:31 (unused)
 VDP_DW              = $0007 =     7          RCM Menu v2.asm:32 (unused)
 VOICAQ              = $F975 = 63861          RCM Menu v2.asm:55
-VramPos             = $E160 = 57696          RCM Menu v2.asm:67
+VramPos             = $E16B = 57707          RCM Menu v2.asm:67
 WRSLT               = $0014 =    20          RCM Menu v2.asm:33
 WRTVDP              = $0047 =    71          RCM Menu v2.asm:34
 WRTVRM              = $004D =    77          RCM Menu v2.asm:35
@@ -1086,5 +1077,5 @@ _end                = $8000 = 32768          RCM Menu v2.asm:86 (unused)
 _size               = $4000 = 16384          RCM Menu v2.asm:86 (unused)
 
 
-total time: 0.0151 sec.
+total time: 0.0217 sec.
 no errors
