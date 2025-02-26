@@ -781,7 +781,7 @@ SMXTeam:
 
 RomList:
 	ds	LineData*6,0
-	include	"./Build/EditThisList.asm"
+	include	"./RomList.asm"
 	ds	LineData*20,0
 
 EndList:

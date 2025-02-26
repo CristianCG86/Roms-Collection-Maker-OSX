@@ -20,7 +20,7 @@ clear='\033[0m'
 # Variables
 LOCATION="./Roms/$foldergames/"
 LOCATIONROM="$LOCATION*.rom"
-TARGET="./Build/EditThisList"
+TARGET="./src/RomList"
 BANK=2
 MAXFILE=0
 COUNT=0

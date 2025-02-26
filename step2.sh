@@ -13,13 +13,13 @@ if [ ! -d "./Roms/$foldergames" ]; then
     exit 1
 fi
 
-if [ ! -f "./Build/EditThisList.asm" ]; then
+if [ ! -f "./src/EditThisList.asm" ]; then
     exit
 fi
 
 cat ./Roms/$foldergames/*.rom > ./Build/Roms.tmp
-./zasm -w "RCM Menu v2.asm" "RCM Menu.bin"
-cat "RCM Menu.bin" ./Build/Roms.tmp > ./Build/LoadThis.rom
+./zasm -w "./src/RCM Menu v2.asm" "./Build/RCM Menu.bin"
+cat "./Build/RCM Menu.bin" ./Build/Roms.tmp > ./Build/LoadThis.rom
 rm ./Build/*.tmp
-rm "RCM Menu.bin"
-rm "RCM Menu.lst"
+rm "./Build/RCM Menu.bin"
+rm "./Build/RCM Menu v2.lst"

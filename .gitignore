@@ -1,1 +1,5 @@
 .DS_Store
+do_all_run.sh
+do_all_run_msx1.sh
+run_emu.sh
+run_emu_msx1.sh
