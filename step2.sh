@@ -13,7 +13,8 @@ if [ ! -d "./Roms/$foldergames" ]; then
     exit 1
 fi
 
-if [ ! -f "./src/EditThisList.asm" ]; then
+if [ ! -f "./src/RomList.asm" ]; then
+    echo "File RomList.asm does not exist in ./src folder"
     exit
 fi
 

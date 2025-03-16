@@ -77,10 +77,13 @@ LineData	equ	42
 Offset		equ	0			; 0 Without offset register
 							; 1 Offset register (Flash Rom SCC Cartridge popolon-fr)
 							; 2 Offset register (MFR SCC+ SD)
+							; 3 Offset register (Yamanooto)
 	if	Offset==1
 OffsetReg	equ	03FFFh
 	elif	Offset==2
 OffsetReg	equ	07FFDh
+	elif	Offset==3
+OffsetReg	equ	07FFEh
 	endif
 
 	org	04000h
