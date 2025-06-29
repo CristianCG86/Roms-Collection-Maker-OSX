@@ -82,8 +82,6 @@ Offset		equ	0			; 0 Without offset register
 OffsetReg	equ	03FFFh
 	elif	Offset==2
 OffsetReg	equ	07FFDh
-	elif	Offset==3
-OffsetReg	equ	07FFEh
 	endif
 
 	org	04000h
@@ -676,16 +674,16 @@ MainPrgEnd:
 BankSel:
 
 Bk5000:							; F975h Bank 0 8KB
-	push	af
-	push	hl
+	push	af							; F5
+	push	hl							; E5
 	if	Offset==0
-	ld	hl,VOICAQ+(RamPrgEnd-BankSel)
-	add	a,(hl)
+	ld	hl,VOICAQ+(RamPrgEnd-BankSel)	; 21 C3 F9
+	add	a,(hl)							; 86
 	endif
-	ld	(05000h),a
-	pop	hl
-	pop	af
-	ret
+	ld	(05000h),a						; 32 00 50
+	pop	hl								; E1
+	pop	af								; F1
+	ret									; C9
 	if	Offset
 	ds	4,0
 	endif
@@ -761,6 +759,14 @@ AD7000:							; F9B4h Bank 1 16KB
 	if	Offset
 	ds	4,0
 	endif
+SCC:							; F9C3h SCC CALL
+	ld	(9000h),a
+	ret
+	if	Offset
+	ds	4,0
+	endif
+
+
 RamPrgEnd:
 
 Title:
