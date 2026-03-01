@@ -1,18 +1,18 @@
-
-; Multi-ROM Menu v1.1 for SCC mapper by Popolon-fr
-;
-; Thanks to GDX for their contribution
+; ============================================
+; RCM Menu v2.1 - TRANSFORMADO A SCREEN1
+; ============================================
 
 ; --- Constantes ---
-CHAR_SELECTOR	  EQU  3Eh	  ; Caracter de selección (0xCF)
-SELECTOR_POS	  EQU  8	  ; Posición del selector
-TS	  			  EQU  17h	  ; Línea de separación superior
-TS_POS			  EQU  1	  ; Posición de la línea de separación superior
-BS				  EQU  17h	  ; Línea de separación inferior
-BS_POS			  EQU  22	  ; Posición de la línea de separación inferior
+CHAR_SELECTOR	  EQU  0xB0	  ; Caracter de selección (0xCF)
+SELECTOR_POS	  EQU  9	  ; Posición del selector
+TS	  			  EQU  0x02	  ; Línea de separación superior
+TS_POS			  EQU  1 * 32	  ; Posición de la línea de separación superior
+BS				  EQU  0x01	  ; Línea de separación inferior
+BS_POS			  EQU  22 * 32	  ; Posición de la línea de separación inferior
 FREQ_POS		  EQU  23	  ; Posición de la frecuencia
-LIST_VIEW_SIZE	  EQU  20	  ; Tamaño de la lista de ROMs
-START_LIST		  EQU  2	  ; Inicio de la lista de ROMs
+LIST_VIEW_SIZE	  EQU  18	  ; Tamaño de la lista de ROMs
+START_LIST		  EQU  3	  ; Inicio de la lista de ROMs
+EL1_POS		  	  EQU  2 * 32	  ; Posición de la primera línea de la lista de ROMs
 
 ; Main-ROM entries
 
@@ -47,7 +47,7 @@ FNKSB      equ 0x00C9        ; BIOS routine that changes the function keys betwe
 BAKCLR		equ	0F3EAh				; Background color (screen 1)
 BDRCLR		equ	0F3EBh				; Border color
 FORCLR		equ	0F3E9h				; Text color
-LINL40		equ	0F3AEh				; Width
+LINL40		equ	0F3AEh				; Width (NO USADO EN SCREEN1)
 TXTATR		equ	0F3B9h				; Character attributs table 
 NEWKEY		equ	0FBE5h
 EXPTBL		equ	0FCC1h
@@ -60,7 +60,6 @@ H_STKE	equ	0FEDAh
 
 ; Program variables
 
-
 RamBottom	equ	0E000h
 PrgInRam	equ	RamBottom+10h			; Address of the program in RAM
 CurrTopName	equ	PrgInRam+(MainPrgEnd-RomSel)	; Address of the first name of the list to display
@@ -71,8 +70,15 @@ NextSegMum	equ	SegMum+1			; Segment number after the selected ROM
 RomSlot		equ	NextSegMum+1			; Slot number
 CurrAdr		equ	RomSlot+1			; Data address of the selected ROM
 RomSize		equ	CurrAdr+2			; Rom size in number of the segment
-WidthName	equ	40
-LineData	equ	42
+
+; *** CAMBIO: Anchura de 40 a 32 columnas ***
+WidthName	equ	32					; 32 columnas para SCREEN1
+LineData	equ	34					; 32 + 2 bytes de overhead
+
+; *** NUEVO: Direcciones VRAM para SCREEN1 ***
+NAME_TABLE	equ	0x1800				; Name Table en SCREEN1
+PATTERN_TABLE	equ	0x0000			; Pattern Table
+COLOR_TABLE	equ	0x2000				; Color Table
 
 Offset		equ	0			; 0 Without offset register
 							; 1 Offset register (Flash Rom SCC Cartridge popolon-fr)
@@ -97,7 +103,7 @@ OffsetReg	equ	07FFDh
 Start:
 	push	af
 	push	bc
-	push	de
+	; push	de
 	push	hl
 
 	ld	hl,BankSel
@@ -138,26 +144,19 @@ Start:
 	ld	a,1
 	ld	(07000h),a
 
-	ld	a,1
-	ld	(BAKCLR),a				; (Useless in screen 0)
+	; *** CAMBIO: Configurar colores para SCREEN1 ***
+	ld	a,1						; Fondo azul
+	ld	(BAKCLR),a
 	ld	(BDRCLR),a
-	ld	a,15
-	ld	(FORCLR),a				; Text color
-	ld	a,WidthName
-	ld	(LINL40),a				; Width 40
-	call	INITXT				; Screen 0
+	ld	a,15					; Texto blanco
+	ld	(FORCLR),a
+	
+	; *** CAMBIO: Usar INIT32 para SCREEN1 ***
+	call	INIT32				; SCREEN1 32x24
+	call	ERAFNK				; Ocultar teclas función
 
-	; Copiar la fuente a la dirección 0x0000 en la VRAM
-    LD HL, Characters        ; Dirección de la fuente
-    LD DE, 0x0800             ; Dirección en la VRAM
-    LD BC, 768                ; 96 caracteres * 8 bytes
-    CALL LDIRVM               ; Copiar a la VRAM
-
-    ; Cambiar la tabla de caracteres en el VDP
-    LD A, 2                 ; Registro 2 del VDP
-    OUT (0x99), A           ; Selecciona el registro 2
-    LD A, 0x08              ; Apuntar a la dirección 0x0800 (0x0800 / 0x800 = 0x08)
-    OUT (0x99), A           ; Actualiza el VDP para usar la tabla en 0x0800
+	; *** CAMBIO: Cargar fuente en Pattern Table (0x0000) ***
+	call LoadCustomFont
 
 ;-- Tests if one Game only to execute it directly
 
@@ -182,63 +181,59 @@ NextMSXgen:
 	jp	z,RomExec				; Jump if MSX generation value of the next line is 255
 ;--
 
-	ld	hl,(TXTATR)
+	; *** CAMBIO: En SCREEN1 usamos NAME_TABLE directamente ***
+	ld	hl, NAME_TABLE
 	ld	de,WidthName*0
 	add	hl,de
-	ex	hl,de					; Set the position at the line 0
+	ex	hl,de					; DE = posición VRAM línea 0
 
 	ld	hl,Title
 	ld	bc,WidthName
-	call	LDIRVM					; Print the title
+	call	LDIRVM				; Print the title
 
-	ld	hl,SMXTeam
+	; *** CAMBIO: Mostrar equipo y frecuencia ***
 	ld	a,(MSXVER)
-
 	or	a
-	jr	z,CurrFreq				; Jump if MSX1
+	jr	nz, MostrarFrecuenciaMSX1	; Si NO es cero, NO es MSX1
+	
+	; Es MSX1 (MSXVER = 0)
+	
+	jr	MostrarFrecuencia
 
+MostrarFrecuenciaMSX1:
+	call PrintSMXTeam
+	jr MostrarFrecuenciaEnd
+
+MostrarFrecuencia:
+	; Es MSX2 o superior
 	ld	a,(RG9SAV)
 	and	2
-	ld	hl,F1_50Hz
-	jr	z,CurrFreq				; Jump if 60hz mode
-	ld	hl,F1_60Hz
-CurrFreq:
-	call	PrintFreqOpt				; Print the 50/60hz option
+	call PrintSMXTeam50Hz
+	jr	z,MostrarFrecuenciaEnd		; 60Hz mode
+	call PrintSMXTeam60Hz		; 50Hz mode
+
+MostrarFrecuenciaEnd:
 
 	ld	hl,RomList
 	ld	(CurrTopName),hl
 
-PrintTopSeparator:
-	ld	hl,(TXTATR)
-	ld	de,WidthName*TS_POS
-	add	hl,de
-	ex	hl,de					; Set the position at the line 0
+	call PrintTopSeparator
 
-	ld	hl,SeparatorTopLine
-	ld	bc,WidthName
-	call	LDIRVM					; Print the title
+	call PrintEmptyLine1
 
 MainLoop:
-	ld	hl,(TXTATR)
-	ld	de,WidthName*START_LIST				; Set the list position at the line 4
-	add	hl,de
+	; *** CAMBIO: Calcular posición de inicio de lista ***
+	ld	hl, NAME_TABLE + (WidthName * START_LIST)  ; Línea 4
 	ld	(VramPos),hl
 
 	halt
 	call	PrintList				; Print the Roms list
 
 	; -- Print separator bottom
-	ld	hl,(TXTATR)
-	ld	de,WidthName*BS_POS
-	add	hl,de
-	ex	hl,de					; Set the position at the line 0
+	call PrintBottomSeparator
+	call PrintFreq
 
-	ld	hl,SeparatorBottomLine
-	ld	bc,WidthName
-	call	LDIRVM		
-
-; Keyboard tests
-
+; Keyboard tests (SIN CAMBIOS - ya usa NEWKEY)
 	ld	a,(NEWKEY+8)				; Row 8
 	and	40h
 	call	z,MoveDown				; Call if Down key is pressed
@@ -249,14 +244,13 @@ MainLoop:
 
 	ld	a,(NEWKEY+8)				; Row 8
 	and	1
-	jr	z,RomExec				; Jump if Space key is pressed
+	jp	z,RomExec				; Jump if Space key is pressed
 
 	ld	a,(NEWKEY+6)				; Row 6
 	and	20h
 	call	z,FreqToggle				; Call if F1 key is pressed
 
-; Joystick tests
-
+; Joystick tests (SIN CAMBIOS)
 	ld	a,1
 	call	GTSTCK					; Test the joystick 1
 	cp	1
@@ -270,13 +264,17 @@ MainLoop:
 	ld	a,1
 	call	GTTRIG					; Test the button 1 of the joystick 1
 	or	a
-	jr	nz,RomExec				; Jump if button 1 of the joystick 1 is pressed
+	jp	nz,RomExec				; Jump if button 1 of the joystick 1 is pressed
 
 	ld	a,3
 	call	GTTRIG					; Test the button 2 of the joystick 1
 	or	a
-	call	nz,FreqTogglJ				; Jump if button 2 of the joystick 1 is pressed			; Print the title
+	call	nz,FreqTogglJ				; Jump if button 2 of the joystick 1 is pressed
 	jr	MainLoop
+
+; ============================================
+; FUNCIONES ORIGINALES (CON PEQUEÑOS AJUSTES)
+; ============================================
 
 FreqTogglJ:
 	ld	a,3
@@ -303,22 +301,31 @@ FreqToggle:
 	xor	2
 	ld	b,a
 	call	WRTVDP					; Toggle 50/60 Hz mode
+	ret
+
+PrintFreqOpt:
+	ret
+
+PrintFreq:
+	ld	a,(MSXVER)
+	cp	0
+	jr z, PrintFreqMSX1 			; Jump if NOT MSX1
 
 	ld	a,(RG9SAV)
 	and	2
-	ld	hl,F1_50Hz
-	jr	z,PrintFreqOpt				; Jump if 60hz mode
-	ld	hl,F1_60Hz
+	jr z, PrintFreq60Hz			; Jump if 60hz mode
+	call PrintSMXTeam50Hz
+	ret
 
-PrintFreqOpt:
-	push	hl
-	ld	hl,(TXTATR)
-	ld	de,WidthName*FREQ_POS
-	add	hl,de
-	ex	hl,de					; Set the position at the line 2
-	pop	hl
-	ld	bc,WidthName
-	jp	LDIRVM					; Print the 50/60hz option
+PrintFreqMSX1:
+	call PrintSMXTeam
+	ret	
+
+PrintFreq60Hz:
+	call PrintSMXTeam60Hz
+	ret
+
+
 
 RomExec:
 	ld	a,(SegMum)
@@ -329,10 +336,6 @@ RomExec:
 	sub	c					; Calculate the Rom size
 	ld	(RomSize),a
 
-	pop	hl
-	pop	de
-	pop	bc
-	pop	af
 	jp	PrgInRam				; Go to the Rom execution program in RAM (RomSel)
 
 MoveDown:
@@ -416,6 +419,9 @@ PrintOK:
 	ld	(NextSegMum),a				; Store the next Segment number
 	ld	hl,(CurrAdr)
 SkipSegMum:
+	; *** CAMBIO: Ajustar offset para SCREEN1 ***
+	; En SCREEN0 usaban: LineData-WidthName (42-40=2)
+	; En SCREEN1: LineData-WidthName (34-32=2) - ¡funciona igual!
 	ld	de,LineData-WidthName
 	add	hl,de					; Points the current name
 	ld	de,(VramPos)
@@ -430,16 +436,15 @@ SkipSegMum:
 
 	pop	hl
 	ld	de,WidthName
-	add	hl,de					; Go to le next name
+	add	hl,de					; Go to next name
 
 	pop	bc
 	djnz	PrintListLP
 
-	ld	hl,(TXTATR)
-	ld	de,WidthName*SELECTOR_POS + 3
-	add	hl,de
+	; *** CAMBIO: Posición del cursor selector en SCREEN1 ***
+	ld	hl, NAME_TABLE + (WidthName * SELECTOR_POS) + 1 ; Línea 10, columna 1
 	ld	a,CHAR_SELECTOR
-	call	WRTVRM					; Print the selection cursor to line 10
+	call	WRTVRM					; Print the selection cursor
 
 	halt
 	halt
@@ -463,16 +468,27 @@ SetVDPReg:
     RET
 
 RomSel:
-	push	bc
-	push	de
+	;push	bc
+	;push	de
+
+	;ld	a,(BASRVN+1)
+	;bit	4,a
+	;jr	nz,NoScreen1				; Jump if initial screen mode is screen 0
+	;ld	a,1
+	;push	hl
+	;call	INIT32
+	;pop	hl
+	ld	hl,(CurrAdr)				; Jump if generation number is not MSX1
+	inc	hl
+	ld	a,(hl)
+	and	3
+	jr	nz,NoScreen1
 
 	ld	a,(BASRVN+1)
 	bit	4,a
 	jr	nz,NoScreen1				; Jump if initial screen mode is screen 0
 	ld	a,1
-	push	hl
 	call	INIT32
-	pop	hl
 NoScreen1:
 	ld	a,(RomSize)
 	cp	5
@@ -510,8 +526,8 @@ Rom2page1:
 	ld	e,1
 	ld	hl,0B000h
 	call	WRSLT					; Select the empty segment on the page A000h-BFFFh
-	pop	de
-	pop	bc
+	;pop	de
+	;pop	bc
 	ld	hl,(04002h)
 	jp	PrgInRam+(ExeByJump-RomSel)		; Execute the selected Rom with INIT address between 4000h and 7FFFh
 
@@ -530,7 +546,13 @@ Rom2pages1_2:
 	if	Offset==1
 	ld	e,a
 	ld	a,(RomSlot)
+	push	af
+	push	de
 	ld	hl,OffsetReg
+	call	WRSLT					; Sets up the offset segment
+	pop	de
+	pop	af
+	ld	hl,03FF0h
 	call	WRSLT					; Sets up the offset segment
 	xor	a
 	endif
@@ -547,11 +569,14 @@ Rom2pages1_2:
 	inc	e
 	ld	hl,0B000h
 	call	WRSLT					; Select the segment 3 on the page A000h-BFFFh
-	pop	af
+	;pop	af
 
-	ld	hl,(4002h)
-	push	hl
-	bit	7,h
+	;ld	hl,(4002h)
+	;push	hl
+	;bit	7,h
+	ld	de,(4002h)
+	push	de
+	bit	7,d
 	jr	z,NoUPTO8000
 
 	ld	a,(EXPTBL)
@@ -561,9 +586,9 @@ Rom2pages1_2:
 	ld	h,080h
 	call	ENASLT					; Select the ROM on the page 8000h-Bfffh
 NoUPTO8000:
-	pop	hl
+	;pop	hl
 	pop	de
-	pop	bc
+	;pop	bc
 	jp	PrgInRam+(ExeByJump-RomSel)		; Execute the selected Rom with INIT address between 4000h and 7FFFh
 
 ; 32Kb Rom execution on page 8000h
@@ -573,7 +598,7 @@ Rom2page2:
 	ld	(05000h),a				; Select the empty segment on the page 4000h-5FFFh
 	ld	(07000h),a				; Select the empty segment on the page 6000h-7FFFh
 
-	push	hl
+	;push	hl
 	ld	a,(RamBottom+15)
 	ld	e,a
 	ld	a,(RomSlot)
@@ -583,9 +608,9 @@ Rom2page2:
 	inc	e
 	ld	hl,0B000h
 	call	WRSLT					; Select the segment 1 on the page A000h-BFFFh
-	pop	hl
-	pop	de
-	pop	bc
+	;pop	hl
+	;pop	de
+	;pop	bc
 	jp	PrgInRam+(ExeByRet-RomSel)		; Back to Rom scaning
 
 ; 16Kb Rom execution on page 0000h
@@ -595,7 +620,7 @@ Rom2page0:
 	ld	(05000h),a				; Select the empty segment on the page 4000h-5FFFh
 	ld	(07000h),a				; Select the empty segment on the page 6000h-7FFFh
 
-	push	hl
+	;push	hl
 	ld	a,(RamBottom+15)
 	ld	e,a
 	ld	a,(RomSlot)
@@ -605,9 +630,9 @@ Rom2page0:
 	inc	e
 	ld	hl,0B000h
 	call	WRSLT					; Select the segment 1 on the page A000h-BFFFh
-	pop	hl
-	pop	de
-	pop	bc
+	;pop	hl
+	;pop	de
+	;pop	bc
 	jp	PrgInRam+(ExeByRet-RomSel)		; Back to Rom scaning
 
 ; 48Kb Rom execution
@@ -649,22 +674,32 @@ PutOnpages1_2_3:
 	ld	hl,0B000h
 	call	WRSLT					; Select the segment 1 on the page A000h-BFFFh
 
-	pop	de
-	pop	bc
+	;pop	de
+	;pop	bc
 	ld	hl,(4002h)
 ;	jp	(hl)					; Execute the selected Rom with INIT address between 4000h and 7FFFh
 
 ExeByJump:
-	ld	a,(SettingBits)
-	and	020h					; Boot type
-	jp	nz,0					; Bios reboot
-	jp	(hl)					; Execute the selected Rom
+	;ld	a,(SettingBits)
+	;and	020h					; Boot type
+	;jp	nz,0					; Bios reboot
+	;jp	(hl)					; Execute the selected Rom
+	pop	hl
+	pop	bc
+	pop	af
+	push	de
+	pop	ix
+	jp	(ix)	
 
 ExeByRet:
-	ld	a,(SettingBits)
-	and	020h					; Boot type
-	ret	nz					; Back to Rom scaning
-	rst	0					; Bios reboot
+	;ld	a,(SettingBits)
+	;and	020h					; Boot type
+	;ret	nz					; Back to Rom scaning
+	;rst	0					; Bios reboot
+	pop	hl
+	pop	bc
+	pop	af
+	ret
 
 MainPrgEnd:
 
@@ -769,25 +804,116 @@ SCC:							; F9C3h SCC CALL
 
 RamPrgEnd:
 
+LoadCustomFont:
+    ; Cargar fuente
+    ld hl, CustomFont
+    ld de, 0x0000
+    ld bc, CustomFontEnd - CustomFont
+    call LDIRVM
+    
+    ; Configurar Color Pattern Table con DEGRADADO
+    ; Cada patrón (8 bytes) tendrá un color base diferente
+    ld hl, ColorPalettes
+    ld de, COLOR_TABLE     ; 0x2000
+    ld bc, 32              ; SOLO 32 bytes
+    call LDIRVM
+    ret
+    
+ColorPalettes:
+    include	"./fonts/colors.asm"
+ColorPalettesEnd:
+
+PrintString:
+    push hl
+    push de
+    push bc
+    
+PrintStringLoop:
+    ld a, (de)
+    or a
+    jp z, PrintStringDone
+    
+    call WRTVRM
+    inc hl
+    inc de
+    jp PrintStringLoop
+    
+PrintStringDone:
+    pop bc
+    pop de
+    pop hl
+    ret
+
+PrintTopSeparator:
+    ld hl, NAME_TABLE + TS_POS
+    ld de, SeparatorTopLine
+    call PrintString
+	ret
+
+PrintBottomSeparator:
+    ld hl, NAME_TABLE + BS_POS
+    ld de, SeparatorBottomLine
+    call PrintString
+	ret
+
+PrintEmptyLine1:
+	ld hl, NAME_TABLE + EL1_POS
+	ld de, EmptyLine
+	call PrintString
+	ret
+
+PrintSMXTeam:
+    ld hl, NAME_TABLE + BS_POS + 32
+    ld de, SMXTeam
+    call PrintString
+	ret
+
+PrintSMXTeam50Hz:
+    ld hl, NAME_TABLE + BS_POS + 32
+    ld de, F1_50Hz
+    call PrintString
+	ret
+
+PrintSMXTeam60Hz:
+	ld hl, NAME_TABLE + BS_POS + 32
+	ld de, F1_60Hz
+	call PrintString
+	ret
+
+; ============================================
+; MENSAJES (AJUSTADOS A 32 COLUMNAS)
+; ============================================
 Title:
-	include	"./RCM Title.asm"
-Characters:
+	include	"./RCM Title.asm"  ; Asegúrate que este archivo tenga 32 columnas
+
+CustomFont:
 	include	"./fonts/custom.asm"
+CustomFontEnd:
+
 EmptyLine:
-	db	"                                        "
+	db	"                                "  ; 32 espacios
+
 SeparatorTopLine:
-	db	TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS
+	db	TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS
+	; 32 caracteres
+
 SeparatorBottomLine:
-	db	BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS
+	db	BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS
+	; 32 caracteres
+
 F1_50Hz:
-	db	" ", 11h, 12h, 13h, " Team                 ",2Bh, 2Eh, 2Fh," 50Hz mode "
+	db	" ", 0xC0,0xC1,0xC2,0xC3,0xC4, "                [F1] 50Hz "
+	; Ajustado a 32 caracteres
+
 F1_60Hz:
-	db	" ", 11h, 12h, 13h, " Team                 ",2Bh, 2Eh, 2Fh," 60Hz mode "
+	db	" ", 0xC0,0xC1,0xC2,0xC3,0xC4, "                [F1] 60Hz "
+	; Ajustado a 32 caracteres
+
 SMXTeam:
-	db	"                ", 11h, 12h, 13h, " Team                "
+	db	"             ", 0xC0,0xC1,0xC2,0xC3,0xC4, "              "
+	; Ajustado a 32 caracteres
 
 ; RomList format is: ROM segment, MSX generation, "Rom name"
-
 RomList:
 	ds	LineData*6,0
 	include	"./RomList.asm"
@@ -797,12 +923,7 @@ EndList:
 	ds	02000h-(EndList-04000h),255
 
 ; Empty header on the segment 1 to run the Roms that contains a Basic program
-
 	ds	10h,0
 
 ; Fill the rest of segment 1 with 255
-
 	ds	01FF0h,255
-	
-
-
