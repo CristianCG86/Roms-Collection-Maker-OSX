@@ -181,47 +181,26 @@ NextMSXgen:
 	jp	z,RomExec				; Jump if MSX generation value of the next line is 255
 ;--
 
+	ld	hl,RomList
+	ld	(CurrTopName),hl
+
 	; *** CAMBIO: En SCREEN1 usamos NAME_TABLE directamente ***
 	ld	hl, NAME_TABLE
 	ld	de,WidthName*0
 	add	hl,de
 	ex	hl,de					; DE = posición VRAM línea 0
 
-	ld	hl,Title
-	ld	bc,WidthName
-	call	LDIRVM				; Print the title
-
-	; *** CAMBIO: Mostrar equipo y frecuencia ***
-	ld	a,(MSXVER)
-	or	a
-	jr	nz, MostrarFrecuenciaMSX1	; Si NO es cero, NO es MSX1
-	
-	; Es MSX1 (MSXVER = 0)
-	
-	jr	MostrarFrecuencia
-
-MostrarFrecuenciaMSX1:
-	call PrintSMXTeam
-	jr MostrarFrecuenciaEnd
-
-MostrarFrecuencia:
-	; Es MSX2 o superior
-	ld	a,(RG9SAV)
-	and	2
-	call PrintSMXTeam50Hz
-	jr	z,MostrarFrecuenciaEnd		; 60Hz mode
-	call PrintSMXTeam60Hz		; 50Hz mode
-
-MostrarFrecuenciaEnd:
-
-	ld	hl,RomList
-	ld	(CurrTopName),hl
+	call PrintTitle				; Print the title
 
 	call PrintTopSeparator
 
-	call PrintEmptyLine1
+	call PrintBottomSeparator
+	call PrintFreq
 
 MainLoop:
+
+
+
 	; *** CAMBIO: Calcular posición de inicio de lista ***
 	ld	hl, NAME_TABLE + (WidthName * START_LIST)  ; Línea 4
 	ld	(VramPos),hl
@@ -301,9 +280,6 @@ FreqToggle:
 	xor	2
 	ld	b,a
 	call	WRTVDP					; Toggle 50/60 Hz mode
-	ret
-
-PrintFreqOpt:
 	ret
 
 PrintFreq:
@@ -844,6 +820,12 @@ PrintStringDone:
     pop hl
     ret
 
+PrintTitle:
+    ld hl, NAME_TABLE + 0
+    ld de, Title
+    call PrintString
+	ret
+
 PrintTopSeparator:
     ld hl, NAME_TABLE + TS_POS
     ld de, SeparatorTopLine
@@ -894,23 +876,23 @@ EmptyLine:
 	db	"                                "  ; 32 espacios
 
 SeparatorTopLine:
-	db	TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS
+	db	TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS,TS, 0
 	; 32 caracteres
 
 SeparatorBottomLine:
-	db	BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS
+	db	BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS,BS, 0
 	; 32 caracteres
 
 F1_50Hz:
-	db	" ", 0xC0,0xC1,0xC2,0xC3,0xC4, "                [F1] 50Hz "
+	db	" ", 0xC0,0xC1,0xC2,0xC3,0xC4, "                [F1] 50Hz ", 0
 	; Ajustado a 32 caracteres
 
 F1_60Hz:
-	db	" ", 0xC0,0xC1,0xC2,0xC3,0xC4, "                [F1] 60Hz "
+	db	" ", 0xC0,0xC1,0xC2,0xC3,0xC4, "                [F1] 60Hz ", 0
 	; Ajustado a 32 caracteres
 
 SMXTeam:
-	db	"             ", 0xC0,0xC1,0xC2,0xC3,0xC4, "              "
+	db	"             ", 0xC0,0xC1,0xC2,0xC3,0xC4, "              ", 0
 	; Ajustado a 32 caracteres
 
 ; RomList format is: ROM segment, MSX generation, "Rom name"
