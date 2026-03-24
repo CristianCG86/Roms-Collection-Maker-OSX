@@ -52,7 +52,6 @@ TXTATR		equ	0F3B9h				; Character attributs table
 NEWKEY		equ	0FBE5h
 EXPTBL		equ	0FCC1h
 RG9SAV		equ	0FFE8h				; Current value of the register 9
-VOICAQ		equ	0xFF50				; Data voice 1 (used as buffer here)
 
 ; Hooks
 
@@ -71,10 +70,6 @@ RomSlot		equ	NextSegMum+1			; Slot number
 CurrAdr		equ	RomSlot+1			; Data address of the selected ROM
 RomSize		equ	CurrAdr+2			; Rom size in number of the segment
 RamLoc		equ	RomSize+2			; Rom size in number of the segment
-SPRegister		equ	RamLoc+2			; Rom size in number of the segment
-IYRegister	equ	SPRegister+2			; Rom size in number of the segment
-
-SLOT_CART	equ	IYRegister + 2				; Slot del cartucho (usado como buffer aquí)
 
 ; *** CAMBIO: Anchura de 40 a 32 columnas ***
 WidthName	equ	32					; 32 columnas para SCREEN1
@@ -84,6 +79,8 @@ LineData	equ	36					; 32 + 4 bytes de overhead
 NAME_TABLE	equ	0x1800				; Name Table en SCREEN1
 PATTERN_TABLE	equ	0x0000			; Pattern Table
 COLOR_TABLE	equ	0x2000				; Color Table
+
+Offset		equ	0			; 0 Without offset register
 
 	org	04000h
 
@@ -96,37 +93,6 @@ COLOR_TABLE	equ	0x2000				; Color Table
 ; Menu program
 
 Start:
-
-	ld (SPRegister), sp
-    
-    call InitRegisters
-
-	ld hl, 0xF975
-	ld (RamLoc), hl			; Store the base address of BankSel in RamLoc for later use in BankSel	
-	call WriteBankSel ; Copy the segments selection routine
-
-	; Obtener el slot
-    call RSLREG
-    rrca
-    rrca
-    and 3
-    ld c, a
-    ld b, 0
-    ld hl, EXPTBL
-    add hl, bc
-    ld a, (hl)
-    and 80h
-    or c
-    ld c, a
-    inc hl
-    inc hl
-    inc hl
-    inc hl
-    ld a, (hl)
-    and 0Ch
-    or c
-    ld (SLOT_CART), a
-
 	push	af
 	push	bc
 	; push	de
@@ -322,38 +288,7 @@ PrintFreq60Hz:
 	call PrintSMXTeam60Hz
 	ret
 
-InitRegisters:
-    call 0x0138
-    rrca
-    rrca
-    push af
-    rrca
-    rrca
-    call InitRegisters2
-    ld (IYRegister), a
-    pop af
-    call InitRegisters2
-    ld (IYRegister+1), a
-    ret
 
-InitRegisters2:
-    and 0x03
-    ld c, a
-    ld b, 0
-    ld hl, EXPTBL
-    add hl, bc
-    ld a, (hl)
-    and 0x80
-    or c
-    ld c, a
-    inc hl
-    inc hl
-    inc hl
-    inc hl
-    ld a, (hl)
-    and 0x0C
-    or c
-    ret
 
 RomExec:
 
@@ -518,14 +453,345 @@ SetVDPReg:
     RET
 
 RomSel:
-	include	"./RCM Menu RomSel.asm"
+		;push	bc
+	;push	de
+
+	;ld	a,(BASRVN+1)
+	;bit	4,a
+	;jr	nz,NoScreen1				; Jump if initial screen mode is screen 0
+	;ld	a,1
+	;push	hl
+	;call	INIT32
+	;pop	hl
+	ld	hl,(CurrAdr)				; Jump if generation number is not MSX1
+	inc	hl
+	ld	a,(hl)
+	and	3
+	jr	nz,NoScreen1
+
+	ld	a,(BASRVN+1)
+	bit	4,a
+	jr	nz,NoScreen1				; Jump if initial screen mode is screen 0
+	ld	a,1
+	call	INIT32
+NoScreen1:
+	ld	a,(RomSize)
+	; cp	5
+	; jp	z,PrgInRam+(Rom2pages1_2_3-RomSel)	; Jump if Romsize == 40K (jr Rom2pages1_2_3)
+	; cp	6
+	; jp	z,PrgInRam+(Rom2pages1_2_3-RomSel)	; Jump if Romsize == 48K (jr Rom2pages1_2_3)
+	cp	4
+	jp	nc,PrgInRam+(Rom2pages1_2-RomSel)	; Jump if Romsize >= 32K (jr Rom2pages1_2)
+
+PlainRom8to16K:
+
+; Initialise the Rom mapper segments and pages for 4/8/16kB Roms
+
+	ld	a,(RamBottom+15)
+	ld	(05000h),a				; Select the segment 0 on the page 4000h-5FFFh
+
+	ld	a,(04003h)
+	bit	7,a
+	jp	nz,PrgInRam+(Rom2page2-RomSel)		; Jump if INIT address > 7FFFh
+	ld	a,(04009h)
+	bit	7,a
+	jp	nz,PrgInRam+(Rom2page2-RomSel)		; Jump if TEXT address > 7FFFh
+	ld	a,(04003h)
+	bit	6,a
+	jp	z,PrgInRam+(Rom2page0-RomSel)		; Jump if INIT address < 4000h
+
+Rom2page1:
+	ld	a,(RamBottom+15)
+	ld	(05000h),a				; Select the segment 0 on the page 4000h-5FFFh
+	inc	a
+	ld	(07000h),a				; Select the segment 1 on the page 6000h-7FFFh
+	ld	e,1
+	ld	hl,09000h
+	call	WRSLT					; Select the empty segment on the page 8000h-9FFFh
+	ld	e,1
+	ld	hl,0B000h
+	call	WRSLT					; Select the empty segment on the page A000h-BFFFh
+	;pop	de
+	;pop	bc
+	ld	hl,(04002h)
+	jp	PrgInRam+(ExeByJump-RomSel)		; Execute the selected Rom with INIT address between 4000h and 7FFFh
+
+; 32kB Rom execution on page 4000h
+
+Rom2pages1_2:
+	ld	a,(RamBottom+15)
+
+	ld	(05000h),a				; Select the segment 0 on the page 4000h-5FFFh
+	inc	a
+	ld	(07000h),a				; Select the segment 1 on the page 6000h-7FFFh
+	ld	e,a
+	ld	a,(RomSlot)
+	inc	e
+	ld	hl,09000h
+	call	WRSLT					; Select the segment 2 on the page 8000h-9FFFh
+	ld	a,(RomSlot)
+	inc	e
+	ld	hl,0B000h
+	call	WRSLT					; Select the segment 3 on the page A000h-BFFFh
+	;pop	af
+
+	;ld	hl,(4002h)
+	;push	hl
+	;bit	7,h
+	ld	de,(4002h)
+	push	de
+	bit	7,d
+	jr	z,NoUPTO8000
+
+	ld	a,(EXPTBL)
+	ld	h,040h
+	call	ENASLT					; Select the Main-ROM on the page 4000h-7fffh
+	ld	a,(RomSlot)
+	ld	h,080h
+	call	ENASLT					; Select the ROM on the page 8000h-Bfffh
+NoUPTO8000:
+	;pop	hl
+	pop	de
+	;pop	bc
+	jp	PrgInRam+(ExeByJump-RomSel)		; Execute the selected Rom with INIT address between 4000h and 7FFFh
+
+; 32Kb Rom execution on page 8000h
+
+Rom2page2:
+	ld	a,1
+	ld	(05000h),a				; Select the empty segment on the page 4000h-5FFFh
+	ld	(07000h),a				; Select the empty segment on the page 6000h-7FFFh
+
+	;push	hl
+	ld	a,(RamBottom+15)
+	ld	e,a
+	ld	a,(RomSlot)
+	ld	hl,09000h
+	call	WRSLT					; Select the segment 0 on the page 8000h-9FFFh
+	ld	a,(RomSlot)
+	inc	e
+	ld	hl,0B000h
+	call	WRSLT					; Select the segment 1 on the page A000h-BFFFh
+	;pop	hl
+	;pop	de
+	;pop	bc
+	jp	PrgInRam+(ExeByRet-RomSel)		; Back to Rom scaning
+
+; 16Kb Rom execution on page 0000h
+
+Rom2page0:
+	ld	a,1
+	ld	(05000h),a				; Select the empty segment on the page 4000h-5FFFh
+	ld	(07000h),a				; Select the empty segment on the page 6000h-7FFFh
+
+	;push	hl
+	ld	a,(RamBottom+15)
+	ld	e,a
+	ld	a,(RomSlot)
+	ld	hl,09000h
+	call	WRSLT					; Select the segment 0 on the page 8000h-9FFFh
+	ld	a,(RomSlot)
+	inc	e
+	ld	hl,0B000h
+	call	WRSLT					; Select the segment 1 on the page A000h-BFFFh
+	;pop	hl
+	;pop	de
+	;pop	bc
+	jp	PrgInRam+(ExeByRet-RomSel)		; Back to Rom scaning
+
+; 48Kb Rom execution
+
+Rom2pages1_2_3:
+	ld	a,(RamBottom+15)
+	ld	(05000h),a				; Select the segment 2 on the page 4000h-5FFFh
+	ld	a,(04000h)
+	cp	41h
+	jp	nz,PrgInRam+(PutOnpages1_2_3-RomSel)	; Jump to PutOnpages1_2_3 if no header on the first segment
+	ld	a,(04001h)
+	cp	42h
+	jp	z,PrgInRam+(Rom2pages1_2-RomSel)	; Jump to Rom2pages1_2 if Header on the first segment
+
+PutOnpages1_2_3:
+	ld	a,(RamBottom+15)
+	add	a,4
+	ld	(05000h),a				; Select the segment 4 on the page 4000h-5FFFh
+	inc	a
+	ld	(07000h),a				; Select the segment 5 on the page 6000h-7FFFh
+
+	ld	hl,4000h
+	ld	de,8000h
+	ld	bc,4000h
+	ldir
+
+	sub	2
+	ld	(07000h),a				; Select the segment 3 on the page 6000h-7FFFh
+	dec	a
+	ld	(05000h),a				; Select the segment 2 on the page 4000h-5FFFh
+
+	ld	a,(RamBottom+15)
+	ld	e,a
+	ld	a,(RomSlot)
+	ld	hl,09000h
+	call	WRSLT					; Select the segment 0 on the page 8000h-9FFFh
+	ld	a,(RomSlot)
+	inc	e
+	ld	hl,0B000h
+	call	WRSLT					; Select the segment 1 on the page A000h-BFFFh
+
+	;pop	de
+	;pop	bc
+	ld	hl,(4002h)
+;	jp	(hl)					; Execute the selected Rom with INIT address between 4000h and 7FFFh
+
+ExeByJump:
+	;ld	a,(SettingBits)
+	;and	020h					; Boot type
+	;jp	nz,0					; Bios reboot
+	;jp	(hl)					; Execute the selected Rom
+	pop	hl
+	pop	bc
+	pop	af
+	push	de
+	pop	ix
+
+    ld ix, (0x4002)
+    ld h, 0x40       ; Página 4000h-7FFFh
+    ei
+    jp 0x001C        ; ENASLT - Activación de slot y salto
+
+ExeByRet:
+	;ld	a,(SettingBits)
+	;and	020h					; Boot type
+	;ret	nz					; Back to Rom scaning
+	;rst	0					; Bios reboot
+	pop	hl
+	pop	bc
+	pop	af
+	ret
+
 MainPrgEnd:
 
 ; These routines have a fixed size and are placed in the music buffer area of channel.
 ; A patched Megarom calls its routines to change memory pages.
 
 BankSel:
-	include	"./RCM Menu BankSel.asm"
+	Bk5000:							; F975h Bank 0 8KB
+	push	af							; F5
+	push	hl							; E5
+    
+    push    de							; D5 (Solo en Bank 0 para guardar DE que se usa en el cálculo de la dirección de la variable)
+	ld	hl, (RamLoc)	; HL = dirección base de BankSel
+	ld	de, RamPrgEnd-BankSel	; DE = offset de la variable
+	add	hl, de			; HL = dirección de la variable
+    pop     de							; D1 (Solo en Bank 0 para recuperar DE)
+
+	add	a,(hl)							; 86
+	ld	(05000h),a						; 32 00 50
+	pop	hl								; E1
+	pop	af								; F1
+	ret									; C9
+	if	Offset
+	ds	4,0
+	endif
+Bk7000:							; F981h Bank 1 8KB
+	push	af
+	push	hl
+
+    push    de							; D5 (Solo en Bank 0 para guardar DE que se usa en el cálculo de la dirección de la variable)
+	ld	hl, (RamLoc)	; HL = dirección base de BankSel
+	ld	de, RamPrgEnd-BankSel	; DE = offset de la variable
+	add	hl, de			; HL = dirección de la variable
+    pop     de							; D1 (Solo en Bank 0 para recuperar DE)
+
+	add	a,(hl)
+	ld	(07000h),a
+	pop	hl
+	pop	af
+	ret
+	if	Offset
+	ds	4,0
+	endif
+Bk9000:							; F98Dh Bank 2 8KB
+	push	af
+	push	hl
+
+    push    de							; D5 (Solo en Bank 0 para guardar DE que se usa en el cálculo de la dirección de la variable)
+	ld	hl, (RamLoc)	; HL = dirección base de BankSel
+	ld	de, RamPrgEnd-BankSel	; DE = offset de la variable
+	add	hl, de			; HL = dirección de la variable
+    pop     de							; D1 (Solo en Bank 0 para recuperar DE)
+
+	add	a,(hl)
+	ld	(09000h),a
+	pop	hl
+	pop	af
+	ret
+	if	Offset
+	ds	4,0
+	endif
+BkB000:							; F999h Bank 3 8KB
+	push	af
+	push	hl
+
+    push    de							; D5 (Solo en Bank 0 para guardar DE que se usa en el cálculo de la dirección de la variable)
+	ld	hl, (RamLoc)	; HL = dirección base de BankSel
+	ld	de, RamPrgEnd-BankSel	; DE = offset de la variable
+	add	hl, de			; HL = dirección de la variable
+    pop     de							; D1 (Solo en Bank 0 para recuperar DE)
+
+	add	a,(hl)
+	ld	(0B000h),a
+	pop	hl
+	pop	af
+	ret
+	if	Offset
+	ds	4,0
+	endif
+AD6000:							; F9A5h Bank 0 16KB
+	push	af
+	add	a,a
+
+    push    de							; D5 (Solo en Bank 0 para guardar DE que se usa en el cálculo de la dirección de la variable)
+	ld	hl, (RamLoc)	; HL = dirección base de BankSel
+	ld	de, RamPrgEnd-BankSel	; DE = offset de la variable
+	add	hl, de			; HL = dirección de la variable
+    pop     de							; D1 (Solo en Bank 0 para recuperar DE)
+
+	add	a,(hl)
+	ld	(05000h),a
+	inc	a
+	ld	(07000h),a
+	pop	af
+	ret
+	if	Offset
+	ds	4,0
+	endif
+AD7000:							; F9B4h Bank 1 16KB
+	push	af
+	add	a,a
+
+    push    de							; D5 (Solo en Bank 0 para guardar DE que se usa en el cálculo de la dirección de la variable)
+	ld	hl, (RamLoc)	; HL = dirección base de BankSel
+	ld	de, RamPrgEnd-BankSel	; DE = offset de la variable
+	add	hl, de			; HL = dirección de la variable
+    pop     de							; D1 (Solo en Bank 0 para recuperar DE)
+
+	add	a,(hl)
+	ld	(09000h),a
+	inc	a
+	ld	(0B000h),a
+	pop	af
+	ret
+	if	Offset
+	ds	4,0
+	endif
+SCC:							; F9C3h SCC CALL
+	ld	(9000h),a
+	ret
+	if	Offset
+	ds	4,0
+	endif
+
 RamPrgEnd:
 
 LoadCustomFont:
@@ -544,7 +810,7 @@ LoadCustomFont:
     ret
     
 ColorPalettes:
-    include	"./fonts/colors.asm"
+{{{colors}}}
 ColorPalettesEnd:
 
 PrintString:
@@ -611,92 +877,19 @@ PrintSMXTeam60Hz:
 	ret
 
 WriteBankSel:
-	; Copiar BankSel a RAM
-	ld	hl, BankSel
-	ld	de, (RamLoc)
-	ld	bc, RamPrgEnd - BankSel
+	ld	hl,BankSel
+	ld	de,(RamLoc)
+	ld	bc,RamPrgEnd-BankSel
 	ldir
-	
-	; Calcular dirección de la variable
-	ld	hl, (RamLoc)
-	ld	de, RamPrgEnd - BankSel
-	add	hl, de		; HL = dirección de la variable
-	
-	; Guardar dirección de la variable en pila
-	push	hl
-	
-	; Modificar cada offset individualmente
-	ld	hl, (RamLoc)
-
-	; Bk5000 (offset 0x03)
-	ld	de, 0x0003
-	add	hl, de
-	pop	de
-	push	de
-	ld	(hl), e
-	inc	hl
-	ld	(hl), d
-	
-	; Bk7000 (offset 0x0F)
-	ld	hl, (RamLoc)
-	ld	de, 0x000F
-	
-	add	hl, de
-	pop	de
-	push	de
-	ld	(hl), e
-	inc	hl
-	ld	(hl), d
-
-	; Bk9000 (offset 0x1B)
-	ld	hl, (RamLoc)
-	ld	de, 0x001B
-	add	hl, de
-	pop	de
-	push	de
-	ld	(hl), e
-	inc	hl
-	ld	(hl), d
-	
-	; BkB000 (offset 0x27)
-	ld	hl, (RamLoc)
-	ld	de, 0x0027
-	add	hl, de
-	pop	de
-	push	de
-	ld	(hl), e
-	inc	hl
-	ld	(hl), d
-	
-	; AD6000 (offset 0x33)
-	ld	hl, (RamLoc)
-	ld	de, 0x0033
-	add	hl, de
-	pop	de
-	push	de
-	ld	(hl), e
-	inc	hl
-	ld	(hl), d
-	
-	; AD7000 (offset 0x42)
-	ld	hl, (RamLoc)
-	ld	de, 0x0042
-	add	hl, de
-	pop	de
-	ld	(hl), e
-	inc	hl
-	ld	(hl), d
-
 	ret
 
 ; ============================================
 ; MENSAJES (AJUSTADOS A 32 COLUMNAS)
 ; ============================================
 Title:
-	include	"./RCM Title.asm"  ; Asegúrate que este archivo tenga 32 columnas
-
+    db	"{{{title}}}"
 CustomFont:
-	include	"./fonts/custom.asm"
+{{{font}}}
 CustomFontEnd:
 
 EmptyLine:
@@ -725,7 +918,7 @@ SMXTeam:
 ; RomList format is: ROM segment, MSX generation, "Rom name"
 RomList:
 	ds	LineData*6,0
-	include	"./RomList.asm"
+{{{roms}}}
 	ds	LineData*20,0
 
 EndList:

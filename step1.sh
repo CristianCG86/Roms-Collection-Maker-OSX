@@ -75,9 +75,9 @@ for n in $(seq 0 $MAXFILE); do
     # REMOVE EXTENSION FROM FILENAME
     GAMENAME="${FNAME[$n]%.*}                                                   "
     GAMENAME=$(echo "$GAMENAME" | tr '[:lower:]' '[:upper:]')
-    echo "\tdb\t${FBANK[$n]}, ${MAXLIST}, \"  ${GAMENAME:0:29} \"" >> "$TARGET.asm"
+    echo "\tdb\t${FBANK[$n]}, ${MAXLIST}, 0x75, 0xF9, \"  ${GAMENAME:0:29} \"" >> "$TARGET.asm"
 done
 
 EBANK=$((FBANK[$MAXFILE]+STEP))
 EBANK=$((EBANK & 255))
-echo "\tdb\t${EBANK}, 255, \"                                        \" ; Do not modify this line" >> "$TARGET.asm"
+echo "\tdb\t${EBANK}, 255, 0x75, 0xF9, \"                                \" ; Do not modify this line" >> "$TARGET.asm"
